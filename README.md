@@ -2,7 +2,7 @@
 
 An AI-powered civic damage intelligence platform that combines citizen reports, public datasets, weather signals, and geospatial data to detect, verify, prioritize, and track civic infrastructure issues (potholes, water leaks, broken streetlights, garbage, flooding, etc.).
 
-> **Status: project scaffold only.** This is the starting skeleton — features are coming in future commits.
+> **Status:** Stage 1 (database schema + RLS) is complete — see [docs/schema.md](docs/schema.md). Backend API, ingestion pipeline, AI analysis, and dashboards are coming in the next stages.
 
 ## Tech Stack
 
@@ -23,6 +23,10 @@ CivicFlow/
 │   └── src/
 │       ├── components/
 │       └── pages/
+├── supabase/        # Postgres schema, seed data, and SQL tests
+│   ├── migrations/  # 0001_initial_schema.sql — tables, triggers, RLS
+│   ├── seed.sql     # starter departments + data sources
+│   └── tests/       # smoke tests + local Docker runner
 ├── backend/         # Express API
 │   ├── config/      # Env loading + Supabase client placeholder
 │   ├── controllers/
@@ -96,7 +100,8 @@ Frontend routes: `/` (landing) · `/map` · `/report` · `/authority` · `/admin
 
 Coming in future commits (not implemented yet):
 
-- Supabase schema, auth, and row-level security
+- ~~Supabase schema, auth, and row-level security~~ — **done (Stage 1)**
+- Stage 2: backend API — auth middleware, role-based access, report/issue endpoints
 - Citizen report flow and media uploads
 - Map integration (Leaflet/Mapbox) with clustered issue markers
 - Data collectors (public datasets, weather signals)
