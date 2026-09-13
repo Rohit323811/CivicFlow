@@ -240,8 +240,12 @@ CREATE POLICY "Issue observations viewable by all users"
     ON issue_observations FOR SELECT
     USING (true);
 
+CREATE POLICY "Issue observations readable and insertable by system and users"
+    ON issue_observations FOR INSERT
+    WITH CHECK (true);
+
 CREATE POLICY "Issue observations managed by authority and admin"
-    ON issue_observations FOR ALL
+    ON issue_observations FOR UPDATE
     USING (public.get_current_user_role() IN ('authority', 'admin'));
 
 -- 8. Verification Events Policies
