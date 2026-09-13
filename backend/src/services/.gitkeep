@@ -1,7 +1,0 @@
-Placeholders for future service-layer modules:
-- report service (create / list / verify reports)
-- AI service wrapper (detection, verification, prioritization)
-- weather signal service
-- geospatial service
-
-Nothing here yet — the folder is tracked via this .gitkeep.

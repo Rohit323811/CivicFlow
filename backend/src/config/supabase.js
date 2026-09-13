@@ -3,36 +3,64 @@ import { createClient } from '@supabase/supabase-js'
 import { env } from './env.js'
 
 /**
- * Supabase client placeholder.
+ * Supabase client factory.
  *
- * No database logic yet — this module only wires up the client so the rest
- * of the backend can import `getSupabase()` when features are added.
- * It returns null until SUPABASE_URL and SUPABASE_ANON_KEY are set in .env.
+ * Three kinds of clients, with very different privileges:
+ *
+ *  1. getSupabase()          — anon key. Used for health checks only.
+ *  2. getBackendClient()     — SERVICE ROLE. Bypasses Row Level Security.
+ *                              Backend-only; the key must never reach the
+ *                              frontend, bundle, or client responses.
+ *  3. getSupabaseWithAuth()  — fresh client carrying the caller's JWT so
+ *                              PostgREST enforces that user's RLS policies.
+ *
+ * Test hooks (__setBackendClientForTests / __setAuthClientForTests) let the
+ * unit tests inject mocks instead of talking to a real Supabase instance.
  */
 
-let client = null
+let anonClient = null
+let serviceClient = null
+let backendTestOverride = null
+let authTestOverride = null
 
-function createSupabaseClient() {
+export function getSupabase() {
   if (!env.isSupabaseConfigured) {
     return null
   }
-
-  // The service-role key bypasses Row Level Security and must never be used
-  // in the frontend. Prefer the anon key for now; key-scoped clients can be
-  // added per-service later.
-  return createClient(env.supabaseUrl, env.supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
+  if (anonClient === null) {
+    anonClient = createClient(env.supabaseUrl, env.supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  }
+  return anonClient
 }
 
-export function getSupabase() {
-  if (client === null) {
-    client = createSupabaseClient()
+export function getBackendClient() {
+  if (backendTestOverride) {
+    return backendTestOverride
   }
-  return client
+  if (!env.isServiceRoleConfigured) {
+    return null
+  }
+  if (serviceClient === null) {
+    serviceClient = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  }
+  return serviceClient
+}
+
+export function getSupabaseWithAuth(jwt) {
+  if (authTestOverride) {
+    return authTestOverride
+  }
+  if (!env.isSupabaseConfigured || !jwt) {
+    return null
+  }
+  return createClient(env.supabaseUrl, env.supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 }
 
 export function requireSupabase() {
@@ -43,4 +71,23 @@ export function requireSupabase() {
     )
   }
   return supabase
+}
+
+// ---------------------------------------------------------------------------
+// Test-only injection (never call from application code)
+// ---------------------------------------------------------------------------
+export function __setBackendClientForTests(client) {
+  backendTestOverride = client
+}
+
+export function __resetBackendClientForTests() {
+  backendTestOverride = null
+}
+
+export function __setAuthClientForTests(client) {
+  authTestOverride = client
+}
+
+export function __resetAuthClientForTests() {
+  authTestOverride = null
 }

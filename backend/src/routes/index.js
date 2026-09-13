@@ -1,11 +1,15 @@
 import { Router } from 'express'
 
 import healthRoutes from './health.routes.js'
+import reportRoutes from './reports.routes.js'
+import issueRoutes from './issues.routes.js'
+import analyticsRoutes from './analytics.routes.js'
 
 const router = Router()
 
-// Feature routes will be mounted here in future commits
-// e.g. router.use('/reports', reportRoutes)
+router.use('/reports', reportRoutes)
+router.use('/issues', issueRoutes)
+router.use('/analytics', analyticsRoutes)
 
 router.use(healthRoutes)
 

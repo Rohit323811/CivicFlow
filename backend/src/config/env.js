@@ -28,4 +28,8 @@ export const env = {
   get isSupabaseConfigured() {
     return Boolean(supabaseUrl && supabaseAnonKey)
   },
+
+  get isServiceRoleConfigured() {
+    return Boolean(supabaseUrl && supabaseServiceRoleKey)
+  },
 }
