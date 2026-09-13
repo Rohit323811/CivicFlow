@@ -1,0 +1,11 @@
+{
+  "name": "civicflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CivicFlow monorepo root — see README.md",
+  "scripts": {
+    "test": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend run build"
+  }
+}
