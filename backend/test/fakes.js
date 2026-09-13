@@ -36,6 +36,10 @@ export function makeQueryBuilder(handler, table) {
       state.filters.push({ type: 'in', col, values })
       return builder
     },
+    is(col, value) {
+      state.filters.push({ type: 'is', col, value })
+      return builder
+    },
     gte(col, val) {
       state.filters.push({ type: 'gte', col, val })
       return builder

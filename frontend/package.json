@@ -9,8 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "leaflet": "^1.9.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
