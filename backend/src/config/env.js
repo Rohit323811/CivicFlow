@@ -23,7 +23,19 @@ export const env = {
 
   // Future integrations (unused for now)
   aiApiKey: optional('AI_API_KEY'),
+  aiBaseUrl: optional('AI_BASE_URL'),
+  aiModel: optional('AI_MODEL'),
   weatherApiKey: optional('WEATHER_API_KEY'),
+
+  // Integration keys stay LIVE (read on each access) so tests and runtime
+  // configuration changes are picked up without a process restart.
+  get liveAiConfig() {
+    return {
+      aiApiKey: optional('AI_API_KEY'),
+      aiBaseUrl: optional('AI_BASE_URL'),
+      aiModel: optional('AI_MODEL'),
+    }
+  },
 
   get isSupabaseConfigured() {
     return Boolean(supabaseUrl && supabaseAnonKey)
