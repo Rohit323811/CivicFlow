@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -9,12 +9,32 @@ import { Card, CATEGORY_LABELS, StatusBadge, SeverityBadge, markerColorForSeveri
 const CATEGORIES = Object.keys(CATEGORY_LABELS)
 const SEVERITIES = ['low', 'medium', 'high', 'critical']
 const DEFAULT_CENTER = [30.3256, 78.0413] // Dehradun Clock Tower
-const POTHOLE_ICON = L.divIcon({
-  className: 'civicflow-pothole-icon',
-  html: '<span role="img" aria-label="Pothole reported" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid #fff;border-radius:50%;background:#dc2626;box-shadow:0 2px 8px #0005;font-size:22px;line-height:1">😡</span>',
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
-})
+
+// Each category gets its own recognisable symbol and colour. Severity is
+// shown as a small corner dot so the issue type remains immediately readable.
+const CATEGORY_MARKERS = {
+  ROAD_DAMAGE: { emoji: '🛣️', label: 'Road damage', color: '#159E91' },
+  WATER_LEAK: { emoji: '💧', label: 'Water leak', color: '#3E82A8' },
+  STREETLIGHT: { emoji: '💡', label: 'Streetlight', color: '#F5A400' },
+  FLOODING: { emoji: '🌊', label: 'Flooding', color: '#E95032' },
+  DRAINAGE: { emoji: '🌊', label: 'Drainage', color: '#C2410C' },
+  GARBAGE: { emoji: '🗑️', label: 'Garbage', color: '#64748B' },
+  TRAFFIC_SIGNAL: { emoji: '🚦', label: 'Traffic signal', color: '#7C3AED' },
+  DAMAGED_SIGN: { emoji: '⚠️', label: 'Damaged sign', color: '#B45309' },
+  OTHER: { emoji: '📍', label: 'Other issue', color: '#475569' },
+}
+
+function makeIssueIcon(category, severity) {
+  const marker = CATEGORY_MARKERS[category] ?? CATEGORY_MARKERS.OTHER
+  const severityColor = markerColorForSeverity(severity)
+  return L.divIcon({
+    className: 'civicflow-category-marker',
+    html: `<span role="img" aria-label="${marker.label}" title="${marker.label}" style="position:relative;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:2px solid #fff;border-radius:50%;background:${marker.color};box-shadow:0 2px 9px #0005;font-size:22px;line-height:1"><span>${marker.emoji}</span><i style="position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:${severityColor}"></i></span>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -17],
+  })
+}
 
 function ViewportLoader({ onBoundsChange }) {
   function sendBounds(map) {
@@ -122,10 +142,14 @@ export default function MapPage() {
           />
           <ViewportLoader onBoundsChange={setBounds} />
           {issues.map((issue) => {
+            const marker = CATEGORY_MARKERS[issue.category] ?? CATEGORY_MARKERS.OTHER
             const popup = (
               <Popup>
                 <div className="min-w-[180px]">
-                  <div className="font-semibold">{CATEGORY_LABELS[issue.category] ?? issue.category}</div>
+                  <div className="flex items-center gap-2 font-semibold">
+                    <span aria-hidden="true" style={{ fontSize: '22px' }}>{marker.emoji}</span>
+                    <span>{CATEGORY_LABELS[issue.category] ?? issue.category}</span>
+                  </div>
                   <div className="mt-1 flex gap-1">
                     <SeverityBadge value={issue.severity} />
                     <StatusBadge value={issue.status} />
@@ -140,33 +164,25 @@ export default function MapPage() {
                 </div>
               </Popup>
             )
-            if (issue.category === 'ROAD_DAMAGE') {
-              return <Marker key={issue.id} position={[issue.lat, issue.lng]} icon={POTHOLE_ICON}>{popup}</Marker>
-            }
             return (
-              <CircleMarker
+              <Marker
                 key={issue.id}
-                center={[issue.lat, issue.lng]}
-                radius={8}
-                pathOptions={{
-                  color: markerColorForSeverity(issue.severity),
-                  fillColor: markerColorForSeverity(issue.severity),
-                  fillOpacity: 0.7,
-                }}
+                position={[issue.lat, issue.lng]}
+                icon={makeIssueIcon(issue.category, issue.severity)}
               >
                 {popup}
-              </CircleMarker>
+              </Marker>
             )
           })}
         </MapContainer>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-        <span>Severity:</span>
-        {SEVERITIES.map((s) => (
-          <span key={s} className="flex items-center gap-1">
-            <span className="inline-block h-3 w-3 rounded-full" style={{ background: markerColorForSeverity(s) }} />
-            {s}
+        <span>Issue types:</span>
+        {Object.entries(CATEGORY_MARKERS).slice(0, 8).map(([category, marker]) => (
+          <span key={category} className="flex items-center gap-1">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-base" style={{ background: marker.color, color: '#fff' }}>{marker.emoji}</span>
+            {CATEGORY_LABELS[category] ?? marker.label}
           </span>
         ))}
         <span className="ml-auto">
