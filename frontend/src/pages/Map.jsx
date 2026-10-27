@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import { useAuth, apiFetch } from '../auth.jsx'
@@ -7,7 +8,13 @@ import { Card, CATEGORY_LABELS, StatusBadge, SeverityBadge, markerColorForSeveri
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS)
 const SEVERITIES = ['low', 'medium', 'high', 'critical']
-const DEFAULT_CENTER = [12.9716, 77.5946] // Bengaluru
+const DEFAULT_CENTER = [30.3256, 78.0413] // Dehradun Clock Tower
+const POTHOLE_ICON = L.divIcon({
+  className: 'civicflow-pothole-icon',
+  html: '<span role="img" aria-label="Pothole reported" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid #fff;border-radius:50%;background:#dc2626;box-shadow:0 2px 8px #0005;font-size:22px;line-height:1">😡</span>',
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+})
 
 function ViewportLoader({ onBoundsChange }) {
   function sendBounds(map) {
@@ -114,17 +121,8 @@ export default function MapPage() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <ViewportLoader onBoundsChange={setBounds} />
-          {issues.map((issue) => (
-            <CircleMarker
-              key={issue.id}
-              center={[issue.lat, issue.lng]}
-              radius={8}
-              pathOptions={{
-                color: markerColorForSeverity(issue.severity),
-                fillColor: markerColorForSeverity(issue.severity),
-                fillOpacity: 0.7,
-              }}
-            >
+          {issues.map((issue) => {
+            const popup = (
               <Popup>
                 <div className="min-w-[180px]">
                   <div className="font-semibold">{CATEGORY_LABELS[issue.category] ?? issue.category}</div>
@@ -141,8 +139,25 @@ export default function MapPage() {
                   )}
                 </div>
               </Popup>
-            </CircleMarker>
-          ))}
+            )
+            if (issue.category === 'ROAD_DAMAGE') {
+              return <Marker key={issue.id} position={[issue.lat, issue.lng]} icon={POTHOLE_ICON}>{popup}</Marker>
+            }
+            return (
+              <CircleMarker
+                key={issue.id}
+                center={[issue.lat, issue.lng]}
+                radius={8}
+                pathOptions={{
+                  color: markerColorForSeverity(issue.severity),
+                  fillColor: markerColorForSeverity(issue.severity),
+                  fillOpacity: 0.7,
+                }}
+              >
+                {popup}
+              </CircleMarker>
+            )
+          })}
         </MapContainer>
       </div>
 
