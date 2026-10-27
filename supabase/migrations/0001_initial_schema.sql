@@ -55,6 +55,43 @@ create domain public.source_type as text
   check (value in ('citizen_report', 'government', 'weather', 'osm', 'ai', 'other'));
 
 -- ---------------------------------------------------------------------------
+-- Reference tables
+-- ---------------------------------------------------------------------------
+create table public.departments (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  contact    text,
+  created_at timestamptz not null default now()
+);
+
+create table public.data_sources (
+  id               uuid primary key default gen_random_uuid(),
+  name             text not null unique,
+  type             public.source_type not null,
+  url              text,
+  reliability_score numeric(3, 2) not null default 0.50
+                   check (reliability_score between 0 and 1),
+  created_at       timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------------
+-- profiles
+-- ---------------------------------------------------------------------------
+create table public.profiles (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null unique
+             references auth.users (id) on delete cascade,
+  role       text not null default 'citizen'
+             check (role in ('citizen', 'authority', 'admin')),
+  name       text,
+  email      text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_profiles_role on public.profiles (role);
+
+-- ---------------------------------------------------------------------------
 -- Helper functions (used by policies; SECURITY DEFINER avoids recursive
 -- RLS lookups on profiles)
 -- ---------------------------------------------------------------------------
@@ -124,42 +161,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ---------------------------------------------------------------------------
--- Reference tables
--- ---------------------------------------------------------------------------
-create table public.departments (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null unique,
-  contact    text,
-  created_at timestamptz not null default now()
-);
-
-create table public.data_sources (
-  id               uuid primary key default gen_random_uuid(),
-  name             text not null unique,
-  type             public.source_type not null,
-  url              text,
-  reliability_score numeric(3, 2) not null default 0.50
-                   check (reliability_score between 0 and 1),
-  created_at       timestamptz not null default now()
-);
-
--- ---------------------------------------------------------------------------
--- profiles
--- ---------------------------------------------------------------------------
-create table public.profiles (
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null unique
-             references auth.users (id) on delete cascade,
-  role       text not null default 'citizen'
-             check (role in ('citizen', 'authority', 'admin')),
-  name       text,
-  email      text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index idx_profiles_role on public.profiles (role);
 
 -- ---------------------------------------------------------------------------
 -- source_runs — one row per collector/API run
@@ -549,7 +550,7 @@ select
   i.lng,
   i.created_at,
   i.department_id,
-  count(io.id) as observation_count,
+  count(io.observation_id) as observation_count,
   count(distinct o.source) as source_count,
   jsonb_object_agg(o.source, 1) filter (where o.source is not null) as sources
 from public.issues i
@@ -593,9 +594,8 @@ grant select on public.v_issue_scores, public.v_issue_locations to anon, authent
 
 -- Notifications are inserted by services via service_role; the definer
 -- helper must not be callable by clients (spam vector).
-revoke execute on function public.insert_notification(uuid, uuid, text) from public;
-revoke execute on function public.insert_notification(uuid, uuid, text) from anon, authenticated;
-grant execute on function public.insert_notification(uuid, uuid, text) to service_role;
+-- Function privileges are configured after the helper is created.
+
 
 -- ============================================================================
 -- Notification helpers (used by Stage 2 services; SECURITY DEFINER scoped to
@@ -612,6 +612,10 @@ begin
   values (p_user_id, p_issue_id, p_message);
 end;
 $$;
+
+revoke execute on function public.insert_notification(uuid, uuid, text) from public;
+revoke execute on function public.insert_notification(uuid, uuid, text) from anon, authenticated;
+grant execute on function public.insert_notification(uuid, uuid, text) to service_role;
 
 create or replace function public.update_notification(p_id uuid, p_read boolean)
 returns void
