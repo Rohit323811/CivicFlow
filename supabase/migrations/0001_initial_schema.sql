@@ -550,7 +550,7 @@ select
   i.lng,
   i.created_at,
   i.department_id,
-  count(io.id) as observation_count,
+  count(io.observation_id) as observation_count,
   count(distinct o.source) as source_count,
   jsonb_object_agg(o.source, 1) filter (where o.source is not null) as sources
 from public.issues i
