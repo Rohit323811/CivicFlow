@@ -55,6 +55,43 @@ create domain public.source_type as text
   check (value in ('citizen_report', 'government', 'weather', 'osm', 'ai', 'other'));
 
 -- ---------------------------------------------------------------------------
+-- Reference tables
+-- ---------------------------------------------------------------------------
+create table public.departments (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  contact    text,
+  created_at timestamptz not null default now()
+);
+
+create table public.data_sources (
+  id               uuid primary key default gen_random_uuid(),
+  name             text not null unique,
+  type             public.source_type not null,
+  url              text,
+  reliability_score numeric(3, 2) not null default 0.50
+                   check (reliability_score between 0 and 1),
+  created_at       timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------------
+-- profiles
+-- ---------------------------------------------------------------------------
+create table public.profiles (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null unique
+             references auth.users (id) on delete cascade,
+  role       text not null default 'citizen'
+             check (role in ('citizen', 'authority', 'admin')),
+  name       text,
+  email      text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_profiles_role on public.profiles (role);
+
+-- ---------------------------------------------------------------------------
 -- Helper functions (used by policies; SECURITY DEFINER avoids recursive
 -- RLS lookups on profiles)
 -- ---------------------------------------------------------------------------
@@ -124,42 +161,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ---------------------------------------------------------------------------
--- Reference tables
--- ---------------------------------------------------------------------------
-create table public.departments (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null unique,
-  contact    text,
-  created_at timestamptz not null default now()
-);
-
-create table public.data_sources (
-  id               uuid primary key default gen_random_uuid(),
-  name             text not null unique,
-  type             public.source_type not null,
-  url              text,
-  reliability_score numeric(3, 2) not null default 0.50
-                   check (reliability_score between 0 and 1),
-  created_at       timestamptz not null default now()
-);
-
--- ---------------------------------------------------------------------------
--- profiles
--- ---------------------------------------------------------------------------
-create table public.profiles (
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid not null unique
-             references auth.users (id) on delete cascade,
-  role       text not null default 'citizen'
-             check (role in ('citizen', 'authority', 'admin')),
-  name       text,
-  email      text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index idx_profiles_role on public.profiles (role);
 
 -- ---------------------------------------------------------------------------
 -- source_runs — one row per collector/API run
