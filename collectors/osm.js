@@ -7,7 +7,7 @@ import { runCollector } from './collectorRunner.js'
  * and maps them into raw records for the OSM normalizer. Configuration
  * (see .env.example):
  *
- *   OSM_BBOX          "minLat,minLng,maxLat,maxLng" (default: Bengaluru area)
+ *   OSM_BBOX          "minLat,minLng,maxLat,maxLng" (default: Dehradun area)
  *   OSM_OVERPASS_URL  optional endpoint override (default: overpass-api.de)
  */
 
@@ -15,7 +15,7 @@ const OVERPASS_DEFAULT = 'https://overpass-api.de/api/interpreter'
 
 export function osmConfigFromEnv(env = process.env) {
   return {
-    bbox: env.OSM_BBOX ?? '12.90,77.50,13.10,77.70',
+    bbox: env.OSM_BBOX ?? '30.25,77.95,30.40,78.15',
     endpoint: env.OSM_OVERPASS_URL ?? OVERPASS_DEFAULT,
   }
 }
