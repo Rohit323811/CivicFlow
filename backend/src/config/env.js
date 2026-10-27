@@ -12,6 +12,8 @@ function optional(key) {
 const supabaseUrl = optional('SUPABASE_URL')
 const supabaseAnonKey = optional('SUPABASE_ANON_KEY')
 const supabaseServiceRoleKey = optional('SUPABASE_SERVICE_ROLE_KEY')
+const aiBaseUrl = optional('AI_BASE_URL') ?? 'https://api.x.ai/v1'
+const aiModel = optional('AI_MODEL') ?? 'grok-4.3'
 
 export const env = {
   port: Number(process.env.PORT) || 5000,
@@ -21,10 +23,11 @@ export const env = {
   supabaseAnonKey,
   supabaseServiceRoleKey,
 
-  // Future integrations (unused for now)
+  // Optional xAI/Grok integration. Heuristics remain the fallback when no key
+  // is configured or the provider request fails.
   aiApiKey: optional('AI_API_KEY'),
-  aiBaseUrl: optional('AI_BASE_URL'),
-  aiModel: optional('AI_MODEL'),
+  aiBaseUrl,
+  aiModel,
   weatherApiKey: optional('WEATHER_API_KEY'),
 
   // Integration keys stay LIVE (read on each access) so tests and runtime
@@ -32,8 +35,8 @@ export const env = {
   get liveAiConfig() {
     return {
       aiApiKey: optional('AI_API_KEY'),
-      aiBaseUrl: optional('AI_BASE_URL'),
-      aiModel: optional('AI_MODEL'),
+      aiBaseUrl: optional('AI_BASE_URL') ?? 'https://api.x.ai/v1',
+      aiModel: optional('AI_MODEL') ?? 'grok-4.3',
     }
   },
 
