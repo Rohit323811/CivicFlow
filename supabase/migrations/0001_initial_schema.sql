@@ -594,9 +594,8 @@ grant select on public.v_issue_scores, public.v_issue_locations to anon, authent
 
 -- Notifications are inserted by services via service_role; the definer
 -- helper must not be callable by clients (spam vector).
-revoke execute on function public.insert_notification(uuid, uuid, text) from public;
-revoke execute on function public.insert_notification(uuid, uuid, text) from anon, authenticated;
-grant execute on function public.insert_notification(uuid, uuid, text) to service_role;
+-- Function privileges are configured after the helper is created.
+
 
 -- ============================================================================
 -- Notification helpers (used by Stage 2 services; SECURITY DEFINER scoped to
@@ -613,6 +612,10 @@ begin
   values (p_user_id, p_issue_id, p_message);
 end;
 $$;
+
+revoke execute on function public.insert_notification(uuid, uuid, text) from public;
+revoke execute on function public.insert_notification(uuid, uuid, text) from anon, authenticated;
+grant execute on function public.insert_notification(uuid, uuid, text) to service_role;
 
 create or replace function public.update_notification(p_id uuid, p_read boolean)
 returns void
